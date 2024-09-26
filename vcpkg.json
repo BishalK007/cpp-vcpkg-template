@@ -1,0 +1,9 @@
+{
+  "name": "my-project",
+  "version-string": "latest",
+  "dependencies": [
+    "fmt",
+    "spdlog",
+    "boost-math"
+  ]
+}

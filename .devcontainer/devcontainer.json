@@ -1,0 +1,43 @@
+{
+    // Name of the DevContainer
+    "name": "C++ Development with vcpkg",
+
+    // Specify the Dockerfile to build the container
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".",
+        "args": {
+            // You can define build-time variables here if needed
+            "VARIANT": "jammy" // Ubuntu 22.04 LTS (Jammy Jellyfish)
+        }
+    },
+
+    // Set default VS Code settings for the container
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "C_Cpp.intelliSenseEngine": "Default",
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    },
+
+    // Extensions to install in the container
+    "extensions": [
+        "ms-vscode.cpptools",          // C/C++ IntelliSense, debugging, and code browsing
+        "ms-vscode.cmake-tools",       // CMake integration
+        "twxs.cmake",                   // CMake language support
+        "ms-vscode.makefile-tools"     // Makefile support (optional)
+    ],
+
+    // Forward ports from the container to the host (if needed)
+    "forwardPorts": [],
+
+    // Commands to run after the container is created
+    "postCreateCommand": "sh .devcontainer/post-create.sh",
+
+    // Mount local directories or files into the container
+    "mounts": [
+        "source=${localWorkspaceFolder}/vcpkg,target=/vcpkg,type=bind,consistency=cached"
+    ],
+
+    // Specify the user to use inside the container
+    "remoteUser": "vscode"
+}
