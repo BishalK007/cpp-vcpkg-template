@@ -4,3 +4,4 @@ vcpkg_installed/.*
 vcpkg_installed/*
 build/*
 build/.*
+file.zip
