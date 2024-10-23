@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 # ----------------------------
-# Set Toolchain File
-# ----------------------------
-# Specify the path to the vcpkg toolchain file
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Path to the vcpkg toolchain file")
-
-# ----------------------------
 # Set Default Variables
 # ----------------------------
 
@@ -17,22 +11,30 @@ set(PROJECT_NAME "MyProject" CACHE STRING "Name of the project")
 set(EXECUTABLE_NAME "MyExecutable" CACHE STRING "Name of the executable")
 
 # **PROJECT_VERSION**
-set(PROJECT_VERSION "1.0" CACHE STRING "Version of Project")
+set(PROJECT_VERSION "1.0" CACHE STRING "Version of the project")
 
+# **USE_VCPKG**
+option(USE_VCPKG "Use Vcpkg for dependency management" ON)
 
-# **SOURCE_FILES**
-# Automatically find all .cpp files in the src directory recursively
-# Automatically find all .cpp files in the src directory recursively
-file(GLOB_RECURSE SOURCE_FILES
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-)
-# set(SOURCE_FILES src/main.cpp src/math/math.cpp src/util/util.cpp)
+# ----------------------------
+# Optionally Set the Vcpkg Toolchain File
+# ----------------------------
+
+if(USE_VCPKG)
+    # Specify the path to the vcpkg toolchain file
+    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Path to the vcpkg toolchain file" FORCE)
+    message(STATUS "Using Vcpkg for dependency management.")
+else()
+    # Disable Vcpkg integration
+    set(CMAKE_TOOLCHAIN_FILE "" CACHE STRING "Disable Vcpkg toolchain file" FORCE)
+    set(CMAKE_DISABLE_VCPKG_INTEGRATION ON CACHE BOOL "Disable Vcpkg integration")
+    message(STATUS "Not using Vcpkg. Dependencies should be provided by the system or Nix.")
+endif()
 
 # ----------------------------
 # Project Configuration
 # ----------------------------
 
-# Set the project name and version (optional)
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 
 # Specify the C++ standard
@@ -40,39 +42,55 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # ----------------------------
+# Source Files
+# ----------------------------
+
+# Automatically find all .cpp files in the src directory recursively
+file(GLOB_RECURSE SOURCE_FILES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+)
+
+# ----------------------------
 # Package Management
 # ----------------------------
 
 # Find Packages and Components
-find_package(Boost REQUIRED COMPONENTS math)
-find_package(fmt REQUIRED)
+if(USE_VCPKG)
+    find_package(fmt REQUIRED)
+    find_package(Boost REQUIRED COMPONENTS math)
+else()
+    find_package(fmt REQUIRED)
+    find_package(Boost REQUIRED)
+endif()
+
+# Add any other packages your project requires
 
 # ----------------------------
 # Include Directories
 # ----------------------------
 
-# Include directories for the project
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # ----------------------------
 # Add Executable
 # ----------------------------
 
-# Add the executable with the specified source files
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
 
 # ----------------------------
 # Link Libraries
 # ----------------------------
-
-# Link Boost::math and fmt::fmt to the executable
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::math fmt::fmt)
-
+if(USE_VCPKG)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::math fmt::fmt)
+else()
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost fmt::fmt)
+endif()
 # ----------------------------
 # Optional: Print Configuration (Useful for Debugging)
 # ----------------------------
 
-# Display the configuration in the CMake output
-message(STATUS "Project Name: ${PROJECT_NAME}")
-message(STATUS "Executable Name: ${EXECUTABLE_NAME}")
-message(STATUS "Source Files: ${SOURCE_FILES}")
+message(STATUS "Final Project Configuration:")
+message(STATUS "  Project Name: ${PROJECT_NAME}")
+message(STATUS "  Executable Name: ${EXECUTABLE_NAME}")
+message(STATUS "  Project Version: ${PROJECT_VERSION}")
+message(STATUS "  Use Vcpkg: ${USE_VCPKG}")
