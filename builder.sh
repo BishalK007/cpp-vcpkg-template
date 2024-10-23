@@ -65,16 +65,33 @@ configure_project() {
     echo "Configuration complete."
 }
 
-# Function to build the CMake project
+# Function to build the project
 build_project() {
     echo "----------------------------------------"
-    echo "Building CMake project..."
+    echo "Building project..."
     echo "----------------------------------------"
 
     if [ "$USE_VCPKG" = "OFF" ]; then
         echo "Building using Nix environment."
-        nix-env -i -f .nix/default.nix --argstr pname_arg ${PROJECT_NAME} --argstr exename_arg ${EXECUTABLE_NAME}  --argstr version_arg ${PROJECT_VERSION}  
+
+        # Remove existing build-nix symlink if it exists to prevent conflicts
+        if [ -L "build-nix" ] || [ -e "build-nix" ]; then
+            echo "Removing existing build-nix symlink or directory..."
+            rm -rf build-nix
+        fi
+
+        # Run nix-build with custom output symlink name
+        nix-build .nix/default.nix -o build-nix --argstr pname_arg "${PROJECT_NAME}" --argstr exename_arg "${EXECUTABLE_NAME}" --argstr version_arg "${PROJECT_VERSION}"
     else
+        echo "Building using Vcpkg and CMake."
+
+        # Ensure the project is configured before building
+        if [ ! -d "$BUILD_DIR" ]; then
+            echo "Build directory not found. Configuring project..."
+            configure_project
+        fi
+
+        # Build the project using CMake
         cmake --build "$BUILD_DIR"
     fi
 
@@ -88,17 +105,21 @@ run_executable() {
     echo "----------------------------------------"
 
     if [ "$USE_VCPKG" = "OFF" ]; then
-        # Assume executable is in PATH after nix-env installation
-        if command -v "$EXECUTABLE_NAME" >/dev/null 2>&1; then
-            "$EXECUTABLE_NAME"
+        # Path to the executable in the Nix build output
+        EXECUTABLE_PATH="./${BUILD_DIR}/bin/${EXECUTABLE_NAME}"
+
+        if [ -f "$EXECUTABLE_PATH" ]; then
+            echo "Executing $EXECUTABLE_PATH"
+            "$EXECUTABLE_PATH"
         else
-            echo "Executable $EXECUTABLE_NAME not found. Please build the project first."
+            echo "Executable $EXECUTABLE_NAME not found in ${BUILD_DIR}/bin/. Please build the project first."
             exit 1
         fi
     else
         EXECUTABLE_PATH="$BUILD_DIR/$EXECUTABLE_NAME"
 
         if [ -f "$EXECUTABLE_PATH" ]; then
+            echo "Executing $EXECUTABLE_PATH"
             ./"$EXECUTABLE_PATH"
         else
             echo "Executable $EXECUTABLE_NAME not found in $BUILD_DIR. Please build the project first."
@@ -114,7 +135,7 @@ zip_files() {
     echo "----------------------------------------"
 
     # Create the zip file excluding the specified directories and files
-    zip -r files.zip . -x "files.zip" ".*" "src/*" "include/*" "vcpkg/*"
+    zip -r files.zip . -x "files.zip" ".*" "build/*" "build-nix"  "vcpkg/*" "ReadME.md"
 
     echo "Zipping complete. Created files.zip."
 }
@@ -226,10 +247,6 @@ if [ "$CONFIGURE_PROJECT" == "1" ]; then
 fi
 
 if [ "$BUILD_PROJECT" == "1" ]; then
-    # Ensure the project is configured before building
-    if [ ! -d "$BUILD_DIR" ] && [ "$USE_VCPKG" = "ON" ]; then
-        configure_project
-    fi
     build_project
 fi
 

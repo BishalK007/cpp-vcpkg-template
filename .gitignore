@@ -4,4 +4,5 @@ vcpkg_installed/.*
 vcpkg_installed/*
 build/*
 build/.*
+build-nix
 file.zip
