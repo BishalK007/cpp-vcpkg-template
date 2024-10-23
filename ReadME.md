@@ -241,7 +241,7 @@ This template uses vcpkg for managing C++ dependencies on Ubuntu.
 1. **Bootstrap vcpkg**:
 
    ```bash
-   ./vcpkg/bootstrap-vcpkg.sh
+   ./vcpkg/bootstrap-vcpkg.sh 
    ```
 
 2. **Integrate vcpkg with the environment**:
