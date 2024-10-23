@@ -183,13 +183,21 @@ For NixOS users, you can build the project using Nix:
 1. **Enter Nix Shell**:
 
    ```bash
+   ./builder.sh --nix-shell
+   ```
+   OR
+   ```bash
    nix-shell .nix/shell.nix
    ```
 
 2. **Build with Nix**:
 
    ```bash
-   nix-build .nix/default.nix --argstr pname_arg MyProject --argstr exename_arg MyExecutable --argstr version_arg 1.0
+   ./builder.sh --use-nix --build
+   ```
+   OR
+   ```bash
+   ./builder.sh --use-nix --build --proj MyCustomProject --exe MyExecutable --ver 2.0
    ```
 
    The executable will be available in the `result/bin/` directory.
