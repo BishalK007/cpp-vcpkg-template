@@ -28,7 +28,7 @@ GLOBAL_PROJECT_VERSION="$PROJECT_VERSION" # Uses the global version from the VER
 IS_SET_CONFIG_GLOBAL=false  # Default to false; can be set via --conf-glob
 
 # Variables for overlay update
-OVERLAY_FILE=".nix/overlays/repototxt-overlay.nix"
+OVERLAY_FILE=".nix/overlays/cpp-vcpkg-template-overlay.nix"
 OWNER="BishalK007"
 REPO="cpp-vcpkg-template"
 BRANCH="main"
