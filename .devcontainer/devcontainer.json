@@ -43,5 +43,8 @@
     ],
 
     // Specify the user to use inside the container
-    "remoteUser": "vscode"
+    "remoteUser": "vscode",
+    "runArgs": [
+        "--name", "<noname>_ubuntu_container"    
+    ]
 }
