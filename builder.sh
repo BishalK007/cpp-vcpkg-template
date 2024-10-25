@@ -8,7 +8,7 @@ BUILD_DIR="build"
 PROJECT_NAME="MyProject"
 EXECUTABLE_NAME="myproject"
 USE_VCPKG=ON
-
+ENTER_NIX_SHELL=0
 # ----------- VERSION CONFIGURATION ------------- #
 # Read version from VERSION file unless overridden
 if [ -z "$PROJECT_VERSION" ]; then
