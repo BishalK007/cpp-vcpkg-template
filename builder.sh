@@ -8,7 +8,6 @@ BUILD_DIR="build"
 PROJECT_NAME="MyProject"
 EXECUTABLE_NAME="myproject"
 USE_VCPKG=ON
-ENTER_NIX_SHELL=0
 
 # ----------- VERSION CONFIGURATION ------------- #
 # Read version from VERSION file unless overridden
@@ -231,6 +230,31 @@ update_overlay() {
     echo "Overlay file updated successfully."
 }
 
+# Debian package using CPack
+build_deb_package() {
+    echo "----------------------------------------"
+    echo "Building .deb package using CPack..."
+    echo "----------------------------------------"
+
+    # Ensure the project is configured
+    if [ ! -d "$BUILD_DIR" ]; then
+        echo "Build directory not found. Configuring project..."
+        configure_project
+    fi
+
+    # Navigate to the build directory
+    cd "$BUILD_DIR"
+
+    # Run CPack to generate the .deb package
+    cpack -G DEB
+
+    echo ".deb package built successfully."
+}
+
+
+
+# _________ main of script __________ #
+
 # Check if no arguments were provided
 if [ "$#" -eq 0 ]; then
     usage
@@ -303,6 +327,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --update-overlay)
             UPDATE_OVERLAY=1
+            shift
+            ;;
+        --build-deb)
+            BUILD_DEB=1
             shift
             ;;
         --help|-h)
