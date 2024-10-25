@@ -1,12 +1,14 @@
-{ pkgs ? import <nixpkgs> {}, pname_arg ? "MyProject", exename_arg ? "MyExecutable", version_arg ? null }:
+{ pkgs ? import <nixpkgs> {},
+  pname_arg,
+  exename_arg,
+  description,
+  maintainer_name,
+  maintainer_email,
+  maintainer_github,
+  homepage,
+  version_arg
+}:
 
-let
-  # Read version from VERSION file if version_arg is null
-  version_from_file = builtins.readFile ../VERSION;
-  # Strip any whitespace or newlines from the version string
-  version_clean = builtins.replaceStrings ["\n" "\r" "\t" " "] [""] version_from_file;
-  final_version = if version_arg == null then version_clean else version_arg;
-in
 pkgs.stdenv.mkDerivation rec {
   pname = pname_arg;
   exename = exename_arg;
@@ -20,6 +22,9 @@ pkgs.stdenv.mkDerivation rec {
     pkgs.git
     pkgs.pkg-config
     pkgs.bash
+    pkgs.zip
+    pkgs.jq
+    pkgs.nix
   ];
 
   buildInputs = [
@@ -38,6 +43,8 @@ pkgs.stdenv.mkDerivation rec {
   cmakeBuildDir = "build-nix";
 
   configurePhase = ''
+    echo -e "\033[1;33m[NOTICE !!!]\033[0m NOTE below will show vcpkg.json being updated but nix does not work on repo dir for builds"
+    echo -e "\033[1;33m[NOTICE !!!]\033[0m Hence it'll not update vcpkg.json. Run \`bash builder.sh -c --use-nix\` to generate manually"
     bash builder.sh -c --use-nix --proj ${pname} --exe ${exename} --ver ${version}
   '';
 
@@ -51,14 +58,14 @@ pkgs.stdenv.mkDerivation rec {
   '';
 
   meta = with pkgs.lib; {
-    description = "My C++ VCPKG template Project built with Nix";
-    homepage = "https://github.com/BishalK007/cpp-vcpkg-template";
+    description = description;
+    homepage = homepage;
     license = licenses.mit;
     maintainers = [ 
       {
-        name = "Bishal Karmakar";
-        email = "bishal@bishal.pro";
-        github = "bishalk007";
+        name = maintainer_name;
+        email = maintainer_email;
+        github = maintainer_github;
       }
     ];
   };

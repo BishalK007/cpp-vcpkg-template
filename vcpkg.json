@@ -1,6 +1,6 @@
 {
-  "name": "my-project",
-  "version-string": "latest",
+  "name": "cpp-vcpkg-template",
+  "version-string": "1.0.0",
   "dependencies": [
     "fmt",
     "spdlog",

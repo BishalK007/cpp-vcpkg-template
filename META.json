@@ -1,0 +1,16 @@
+{
+    "project_name": "cpp-vcpkg-template", 
+    "executable_name": "cppvcpkgtemplate",
+    "description": "A template for smooth cpp vcpkg cmake development.",
+    "maintainer": {
+      "name": "Bishal Karmakar",
+      "email": "bishal@bishal.pro",
+      "githubUsername": "BishalK007"
+    },
+    "githubRepoUrl": "https://github.com/BishalK007/cpp-vcpkg-template",
+    "overlay_branch": "main",
+    "NIX_OVERLAY_FILE": ".nix/overlays/cpp-vcpkg-template-overlay.nix",
+    "NIX_DEFAULT_FILE": ".nix/default.nix",
+    "NIX_SHELL_FILE": ".nix/shell.nix"
+}
+  

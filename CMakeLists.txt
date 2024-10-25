@@ -1,28 +1,24 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 # ----------------------------
-# Set Default Variables
+# Set Default Variables (Passed from builder.sh)
 # ----------------------------
 
-# **PROJECT_NAME**
-set(PROJECT_NAME "MyProject" CACHE STRING "Name of the project")
+# PROJECT_NAME and EXECUTABLE_NAME are set via command-line arguments
+set(PROJECT_NAME "" CACHE STRING "Name of the project")
+set(EXECUTABLE_NAME "" CACHE STRING "Name of the executable")
 
-# **EXECUTABLE_NAME**
-set(EXECUTABLE_NAME "MyExecutable" CACHE STRING "Name of the executable")
-
-# **PROJECT_VERSION**
+# PROJECT_VERSION is set via command-line arguments or read from VERSION file
 if(NOT DEFINED PROJECT_VERSION)
-    # Read version from VERSION file
     file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" PROJECT_VERSION)
 endif()
 
-# **MAINTAINER NAME**
-set(MAINTAINER_NAME "Name Surname" CACHE STRING "Name of maintainer")
+# MAINTAINER_NAME and MAINTAINER_MAIL are set via command-line arguments
+set(MAINTAINER_NAME "" CACHE STRING "Name of maintainer")
+set(MAINTAINER_MAIL "" CACHE STRING "E-Mail of maintainer")
 
-# **MAINTAINER EMAIL**
-set(MAINTAINER_MAIL "mail@mail.com" CACHE STRING "E-Mail of maintainer")
-
-
+# HOMEPAGE is set via command-line arguments
+set(HOMEPAGE "" CACHE STRING "Project homepage")
 
 # ----------------------------
 # Optional: Print Configuration (Useful for Debugging)
@@ -32,14 +28,11 @@ set(MAINTAINER_MAIL "mail@mail.com" CACHE STRING "E-Mail of maintainer")
 message(STATUS "Initial Project Configuration:")
 message(STATUS "  Project Name: ${PROJECT_NAME}")
 message(STATUS "  Executable Name: ${EXECUTABLE_NAME}")
-# PROJECT_VERSION will be printed after it's determined
 if(NOT DEFINED PROJECT_VERSION)
     message(STATUS "Read version from VERSION file: ${PROJECT_VERSION}")
 else()
     message(STATUS "Using provided PROJECT_VERSION: ${PROJECT_VERSION}")
 endif()
-
-
 
 # ----------------------------
 # Option to Use Vcpkg
@@ -47,9 +40,8 @@ endif()
 
 option(USE_VCPKG "Use Vcpkg for dependency management" ON)
 
-
 # ----------------------------
-# Optionally Set the Vcpkg Toolchain File
+# Set Toolchain File and Disable Vcpkg Integration if Not Using Vcpkg
 # ----------------------------
 
 if(USE_VCPKG)
@@ -67,12 +59,12 @@ endif()
 # Project Configuration
 # ----------------------------
 
+# Set the project name and version
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 
 # ----------------------------
 # Source Files
@@ -86,8 +78,6 @@ file(GLOB_RECURSE SOURCE_FILES
 # ----------------------------
 # Package Management
 # ----------------------------
-
-# Find Packages and Components
 if(USE_VCPKG)
     find_package(fmt REQUIRED)
     find_package(Boost REQUIRED COMPONENTS math)
@@ -95,8 +85,6 @@ else()
     find_package(fmt REQUIRED)
     find_package(Boost REQUIRED)
 endif()
-
-# Add any other packages your project requires
 
 # ----------------------------
 # Include Directories
@@ -106,8 +94,7 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add the build directory's include directory for generated headers
-include_directories(${CMAKE_BINARY_DIR}/include) 
-
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 # ----------------------------
 # Generate version.hpp
@@ -120,35 +107,34 @@ configure_file(
     @ONLY
 )
 
-
 # ----------------------------
 # Add Executable
 # ----------------------------
 
+# Add the executable with the specified source files
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
-
 
 # ----------------------------
 # Link Libraries
 # ----------------------------
-
 if(USE_VCPKG)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::math fmt::fmt)
 else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost fmt::fmt)
 endif()
-
+# Link ftxui to the executable
 
 # ----------------------------
-# Optional: Print Configuration (Useful for Debugging)
+# Final Configuration Summary
 # ----------------------------
 
+# Display the final configuration in the CMake output
 message(STATUS "Final Project Configuration:")
 message(STATUS "  Project Name: ${PROJECT_NAME}")
 message(STATUS "  Executable Name: ${EXECUTABLE_NAME}")
 message(STATUS "  Project Version: ${PROJECT_VERSION}")
+message(STATUS "  Source Files: ${SOURCE_FILES}")
 message(STATUS "  Use Vcpkg: ${USE_VCPKG}")
-
 
 # ----------------------------
 # CPack Configuration for Debian Package
@@ -174,12 +160,12 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${MAINTAINER_NAME}") # Required for DEB
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.7), libstdc++6 (>= 5)")
-set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "A C++ vcpkg template.")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/BishalK007/RepoToTxt")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${description}")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${HOMEPAGE}")
 
 # Define installation directories
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION bin)
-install(FILES VERSION ReadMe.md DESTINATION /usr/share/doc/${PROJECT_NAME})
+install(FILES VERSION Readme.md DESTINATION /usr/share/doc/${PROJECT_NAME})
 
 # Include CPack configurations
 include(CPack)
