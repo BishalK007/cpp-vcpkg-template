@@ -6,17 +6,33 @@ set -e
 # Default configuration
 BUILD_DIR="build"
 PROJECT_NAME="MyProject"
-EXECUTABLE_NAME="MyExecutable"
-PROJECT_VERSION="1.0"
+EXECUTABLE_NAME="myproject"
 USE_VCPKG=ON
 ENTER_NIX_SHELL=0
+
+# ----------- VERSION CONFIGURATION ------------- #
+# Read version from VERSION file unless overridden
+if [ -z "$PROJECT_VERSION" ]; then
+    if [ -f "VERSION" ]; then
+        PROJECT_VERSION=$(cat VERSION | tr -d '[:space:]')
+    else
+        PROJECT_VERSION="1.0.0"
+    fi
+fi
 
 # ----------- GLOBAL CONFIGURATION ------------- #
 # Set these values as desired for your global configuration
 GLOBAL_PROJECT_NAME="MyProjectGlobal"
-GLOBAL_EXECUTABLE_NAME="projglobal"
-GLOBAL_PROJECT_VERSION="1.0"
+GLOBAL_EXECUTABLE_NAME="myprojectglobal"
+GLOBAL_PROJECT_VERSION="$PROJECT_VERSION" # Uses the global version from the VERSION file
 IS_SET_CONFIG_GLOBAL=false  # Default to false; can be set via --conf-glob
+
+# Variables for overlay update
+OVERLAY_FILE=".nix/overlays/repototxt-overlay.nix"
+OWNER="BishalK007"
+REPO="cpp-vcpkg-template"
+BRANCH="main"
+GITHUB_REPO_URL="https://github.com/${OWNER}/${REPO}.git"
 
 # Function to display usage
 usage() {
@@ -33,6 +49,7 @@ usage() {
     echo "  --use-nix          Build without using Vcpkg (for Nix environment)"
     echo "  --nix-shell        Enter Nix shell environment"
     echo "  --conf-glob        Use global configuration settings"
+    echo "  --update-overlay   Update the overlay file with the latest commit and SHA256"
     echo "  --help, -h         Display this help message"
     exit 1
 }
@@ -148,6 +165,72 @@ enter_nix_shell() {
     nix-shell .nix/shell.nix
 }
 
+# Function to update the overlay file
+update_overlay() {
+    echo "----------------------------------------"
+    echo "Updating overlay file..."
+    echo "----------------------------------------"
+
+    # Check if the overlay file exists
+    if [ ! -f "$OVERLAY_FILE" ]; then
+        echo "Overlay file not found at $OVERLAY_FILE."
+        exit 1
+    fi
+
+    # Check for required commands
+    if ! command -v nix-prefetch-git &> /dev/null; then
+        echo "Error: nix-prefetch-git is not installed or not in PATH."
+        exit 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        echo "Error: jq is not installed or not in PATH."
+        exit 1
+    fi
+
+    # Fetch the latest commit hash from the remote repository
+    echo "Fetching latest commit hash from remote repository..."
+    LATEST_COMMIT_HASH=$(git ls-remote "$GITHUB_REPO_URL" "refs/heads/${BRANCH}" | cut -f1)
+
+    if [ -z "$LATEST_COMMIT_HASH" ]; then
+        echo "Error: Could not fetch the latest commit hash from the remote repository."
+        exit 1
+    fi
+
+    echo "Latest remote commit hash: $LATEST_COMMIT_HASH"
+
+    # Get the sha256 hash of the source at that commit
+    echo "Fetching the repository and computing SHA256..."
+    PREFETCH_OUTPUT=$(nix-prefetch-git --quiet --url "$GITHUB_REPO_URL" --rev "${LATEST_COMMIT_HASH}")
+    BASE32_HASH=$(echo "$PREFETCH_OUTPUT" | jq -r '.sha256')
+    echo "Base32 SHA256: $BASE32_HASH"
+
+    # Convert the base32 hash to SRI format (base64 with sha256- prefix)
+    SRI_HASH=$(nix --extra-experimental-features nix-command hash to-sri --type sha256 "$BASE32_HASH")
+    echo "SRI-formatted SHA256: $SRI_HASH"
+
+    # Update the overlay file
+    # Escape slashes and other special characters for sed
+    ESCAPED_COMMIT_HASH=$(echo "$LATEST_COMMIT_HASH" | sed -e 's/[\/&]/\\&/g')
+    ESCAPED_SRI_HASH=$(echo "$SRI_HASH" | sed -e 's/[\/&]/\\&/g')
+
+    # Escape variables for pname_arg, exename_arg, version_arg
+    ESCAPED_PROJECT_NAME=$(echo "$PROJECT_NAME" | sed -e 's/[\/&]/\\&/g')
+    ESCAPED_EXECUTABLE_NAME=$(echo "$EXECUTABLE_NAME" | sed -e 's/[\/&]/\\&/g')
+    ESCAPED_PROJECT_VERSION=$(echo "$PROJECT_VERSION" | sed -e 's/[\/&]/\\&/g')
+
+    # Use sed to replace the rev and sha256 lines
+    sed -i "s/rev = \".*\";/rev = \"${ESCAPED_COMMIT_HASH}\";/g" "$OVERLAY_FILE"
+    sed -i "s/sha256 = \".*\";/sha256 = \"${ESCAPED_SRI_HASH}\";/g" "$OVERLAY_FILE"
+
+    # Use sed to replace the pname_arg, exename_arg, version_arg lines
+    sed -i "s/pname_arg = \".*\";/pname_arg = \"${ESCAPED_PROJECT_NAME}\";/g" "$OVERLAY_FILE"
+    sed -i "s/exename_arg = \".*\";/exename_arg = \"${ESCAPED_EXECUTABLE_NAME}\";/g" "$OVERLAY_FILE"
+    sed -i "s/version_arg = \".*\";/version_arg = \"${ESCAPED_PROJECT_VERSION}\";/g" "$OVERLAY_FILE"
+
+    echo "Overlay file updated successfully."
+}
+
 # Check if no arguments were provided
 if [ "$#" -eq 0 ]; then
     usage
@@ -218,6 +301,10 @@ while [[ "$#" -gt 0 ]]; do
             IS_SET_CONFIG_GLOBAL=true
             shift
             ;;
+        --update-overlay)
+            UPDATE_OVERLAY=1
+            shift
+            ;;
         --help|-h)
             usage
             ;;
@@ -256,4 +343,8 @@ fi
 
 if [ "$ZIP_FILES" == "1" ]; then
     zip_files
+fi
+
+if [ "$UPDATE_OVERLAY" == "1" ]; then
+    update_overlay
 fi

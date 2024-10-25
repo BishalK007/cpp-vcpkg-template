@@ -11,10 +11,35 @@ set(PROJECT_NAME "MyProject" CACHE STRING "Name of the project")
 set(EXECUTABLE_NAME "MyExecutable" CACHE STRING "Name of the executable")
 
 # **PROJECT_VERSION**
-set(PROJECT_VERSION "1.0" CACHE STRING "Version of the project")
+if(NOT DEFINED PROJECT_VERSION)
+    # Read version from VERSION file
+    file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" PROJECT_VERSION)
+endif()
 
-# **USE_VCPKG**
+
+# ----------------------------
+# Optional: Print Configuration (Useful for Debugging)
+# ----------------------------
+
+# Display the configuration in the CMake output
+message(STATUS "Initial Project Configuration:")
+message(STATUS "  Project Name: ${PROJECT_NAME}")
+message(STATUS "  Executable Name: ${EXECUTABLE_NAME}")
+# PROJECT_VERSION will be printed after it's determined
+if(NOT DEFINED PROJECT_VERSION)
+    message(STATUS "Read version from VERSION file: ${PROJECT_VERSION}")
+else()
+    message(STATUS "Using provided PROJECT_VERSION: ${PROJECT_VERSION}")
+endif()
+
+
+
+# ----------------------------
+# Option to Use Vcpkg
+# ----------------------------
+
 option(USE_VCPKG "Use Vcpkg for dependency management" ON)
+
 
 # ----------------------------
 # Optionally Set the Vcpkg Toolchain File
@@ -40,6 +65,7 @@ project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 
 # ----------------------------
 # Source Files
@@ -69,7 +95,24 @@ endif()
 # Include Directories
 # ----------------------------
 
+# Include directories for the project
 include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# Add the build directory's include directory for generated headers
+include_directories(${CMAKE_BINARY_DIR}/include) 
+
+
+# ----------------------------
+# Generate version.hpp
+# ----------------------------
+
+# Generate version.hpp from version.hpp.in
+configure_file(
+    "${CMAKE_SOURCE_DIR}/include/utils/version.hpp.in"
+    "${CMAKE_BINARY_DIR}/include/utils/version.hpp"
+    @ONLY
+)
+
 
 # ----------------------------
 # Add Executable
@@ -77,14 +120,18 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
 
+
 # ----------------------------
 # Link Libraries
 # ----------------------------
+
 if(USE_VCPKG)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::math fmt::fmt)
 else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost fmt::fmt)
 endif()
+
+
 # ----------------------------
 # Optional: Print Configuration (Useful for Debugging)
 # ----------------------------

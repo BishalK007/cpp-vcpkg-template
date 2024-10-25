@@ -1,5 +1,12 @@
-{ pkgs ? import <nixpkgs> {}, pname_arg ? "MyProject", exename_arg ? "MyExecutable", version_arg ? "1.0" }:
+{ pkgs ? import <nixpkgs> {}, pname_arg ? "MyProject", exename_arg ? "MyExecutable", version_arg ? null }:
 
+let
+  # Read version from VERSION file if version_arg is null
+  version_from_file = builtins.readFile ../VERSION;
+  # Strip any whitespace or newlines from the version string
+  version_clean = builtins.replaceStrings ["\n" "\r" "\t" " "] [""] version_from_file;
+  final_version = if version_arg == null then version_clean else version_arg;
+in
 pkgs.stdenv.mkDerivation rec {
   pname = pname_arg;
   exename = exename_arg;
