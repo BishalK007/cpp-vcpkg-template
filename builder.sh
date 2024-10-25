@@ -3,6 +3,7 @@
 ENTER_NIX_SHELL="0"
 USE_VCPKG=ON
 BUILD_DIR="build"
+PRJ_TEMP_OVERRWITTEN="0" # Set to 1 if --proj --exe --ver are specified
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -123,8 +124,10 @@ generate_vcpkg_json() {
 configure_project() {
     log_info "Configuring CMake project..."
 
-    # Generate vcpkg.json
-    generate_vcpkg_json
+    # Generate vcpkg.json if not overwritten by --proj --exe --ver
+    if [ "$PRJ_TEMP_OVERRWITTEN" = "0" ]; then
+        generate_vcpkg_json
+    fi
 
     # Configure CMake
     cmake -B "$BUILD_DIR" -S . \
@@ -388,6 +391,7 @@ parse_args() {
             --exe|-e)
                 if [[ -n "$2" && ! "$2" =~ ^- ]]; then
                     EXECUTABLE_NAME="$2"
+                    PRJ_TEMP_OVERRWITTEN="1"
                     shift 2
                 else
                     log_error "--exe requires a valid executable name."
@@ -396,6 +400,7 @@ parse_args() {
                 ;;
             --proj|-p)
                 if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                    PRJ_TEMP_OVERRWITTEN="1"
                     PROJECT_NAME="$2"
                     shift 2
                 else
@@ -405,6 +410,7 @@ parse_args() {
                 ;;
             --ver|-v)
                 if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                    PRJ_TEMP_OVERRWITTEN="1"
                     PROJECT_VERSION="$2"
                     shift 2
                 else
